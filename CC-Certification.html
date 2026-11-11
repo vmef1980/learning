@@ -1,0 +1,619 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Avance CC Victor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: summary band (countdown, ritmo, avance) → dominios + Percipio + simulacros → lista de días por semana */
+:root{
+  --bg:#F3F6FA; --surface:#FFFFFF; --ink:#13233A; --muted:#5A6B82; --line:#DCE3EC;
+  --accent:#0E6F86; --accent-soft:#E1F0F4;
+  --ok:#1E7A46; --ok-soft:#E2F3E8; --warn:#A35B00; --warn-soft:#FBEEDB; --bad:#B3261E; --bad-soft:#FBE4E2;
+  --f-display:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1622; --surface:#142130; --ink:#E4ECF5; --muted:#93A4BA; --line:#24364B;
+  --accent:#4FB6CF; --accent-soft:#16303C;
+  --ok:#5CC98A; --ok-soft:#14301F; --warn:#F0A64B; --warn-soft:#352612; --bad:#F2857D; --bad-soft:#3A1A18;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1622; --surface:#142130; --ink:#E4ECF5; --muted:#93A4BA; --line:#24364B;
+  --accent:#4FB6CF; --accent-soft:#16303C;
+  --ok:#5CC98A; --ok-soft:#14301F; --warn:#F0A64B; --warn-soft:#352612; --bad:#F2857D; --bad-soft:#3A1A18;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-size:clamp(26px,5vw,36px);line-height:1.15;margin:4px 0 0;font-weight:700;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:17px;margin:0;font-weight:600}
+.sub{color:var(--muted);margin:6px 0 0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:6px;min-width:0}
+.tile .big{font-family:var(--f-mono);font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .small{color:var(--muted);font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;width:max-content}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.bar.thin{height:6px}
+
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.dom{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center}
+.dom .code{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 6px;border-radius:4px}
+.dom .name{font-size:14px;min-width:0}
+.dom .w{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.dom .bar{grid-column:2/4}
+.stack{display:grid;gap:14px}
+
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.stepper .ctl{display:flex;align-items:center;gap:8px}
+button{font:inherit;cursor:pointer}
+.sbtn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:18px;line-height:1}
+.sbtn:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.scores{display:grid;gap:10px}
+.score{display:grid;grid-template-columns:1fr 84px;gap:10px;align-items:center}
+.score label{font-size:14px}
+.score input{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-family:var(--f-mono);text-align:right}
+.score .bar{grid-column:1/3}
+.score .bar>i.ok{background:var(--ok)} .score .bar>i.warn{background:var(--warn)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+
+.week{display:grid;gap:8px}
+.week h3{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 0;font-weight:500}
+.day{display:grid;grid-template-columns:auto 96px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer}
+.day:hover{border-color:var(--accent)}
+.day input{width:20px;height:20px;accent-color:var(--accent);margin:0;cursor:pointer}
+.day .date{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.day .txt{min-width:0}
+.day .t{font-weight:600;font-size:14px}
+.day .d{font-size:13px;color:var(--muted)}
+.day{align-items:start}
+.day input,.day .tag{margin-top:2px}
+.day .date{display:grid;gap:2px}
+.day .hrs{font-size:11px;color:var(--muted);font-weight:400}
+.det{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin-top:6px;font-size:13px}
+.det .k{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);padding-top:1px}
+.det .v{color:var(--muted);min-width:0}
+.routine{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0;padding:0;list-style:none;counter-reset:r}
+.routine li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:2px;font-size:14px}
+.routine .min{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.day .tag{font-family:var(--f-mono);font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.day.done{opacity:.6} .day.done .t{text-decoration:line-through}
+.day.today{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.day.late:not(.done) .date{color:var(--bad);font-weight:600}
+.day.exam{background:var(--accent-soft);border-color:var(--accent)}
+@media (max-width:560px){.day{grid-template-columns:auto 1fr auto}.day .date{grid-column:2/4;order:-1}}
+
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;padding:0}
+.confirm{display:inline-flex;gap:8px;align-items:center}
+.confirm button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:2px 10px}
+.confirm .danger{color:var(--bad);border-color:var(--bad)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{width:100%;min-height:80px;resize:vertical}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:8px;padding:8px 16px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.q{display:grid;gap:12px}
+.q .qhead{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.q .qtext{font-size:16px;font-weight:600;line-height:1.45}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 12px;font-size:14px;display:flex;gap:10px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt b{font-family:var(--f-mono);color:var(--muted)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+.explain{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 8px 8px 0;font-size:14px}
+.answer{white-space:pre-wrap;font-size:14px;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;min-height:48px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:22px 18px;min-height:150px;display:grid;place-items:center;text-align:center;cursor:pointer;gap:8px}
+.card .term{font-family:var(--f-mono);font-size:18px;font-weight:600}
+.card .def{font-size:15px;max-width:56ch}
+.links{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.links a{color:var(--accent);font-weight:500}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ISC2 Certified in Cybersecurity · Outline 2026</div>
+    <h1>Avance de Victor hacia el CC</h1>
+    <p class="sub">Plan reajustado: inicia el miércoles 11 de noviembre. Examen el jueves 26 a las 12:30 PM, Universidad Galileo.</p>
+  </header>
+
+  <section class="summary" aria-label="Resumen">
+    <div class="tile">
+      <span class="eyebrow">Faltan</span>
+      <span class="big" id="countdown">–</span>
+      <span class="small" id="countdownSub">para el examen</span>
+    </div>
+    <div class="tile">
+      <span class="eyebrow">Ritmo</span>
+      <span id="pace" class="pill ok">–</span>
+      <span class="small" id="paceSub">–</span>
+    </div>
+    <div class="tile">
+      <span class="eyebrow">Días completados</span>
+      <span class="big" id="doneCount">0/15</span>
+      <div class="bar"><i id="doneBar" style="width:0%"></i></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="domH">
+      <h2 id="domH">Avance por dominio</h2>
+      <div class="stack" id="domains"></div>
+    </section>
+    <div class="stack">
+      <section class="panel" aria-labelledby="perH">
+        <h2 id="perH">Percipio · CC 2026</h2>
+        <div class="stepper">
+          <span>Cursos <span class="mono" id="cTxt">0/14</span></span>
+          <span class="ctl"><button class="sbtn" data-step="courses" data-d="-1" aria-label="Quitar un curso">−</button><button class="sbtn" data-step="courses" data-d="1" aria-label="Sumar un curso">+</button></span>
+        </div>
+        <div class="bar thin"><i id="cBar" style="width:0%"></i></div>
+        <div class="stepper">
+          <span>Recursos adicionales <span class="mono" id="xTxt">0/3</span></span>
+          <span class="ctl"><button class="sbtn" data-step="extras" data-d="-1" aria-label="Quitar un recurso">−</button><button class="sbtn" data-step="extras" data-d="1" aria-label="Sumar un recurso">+</button></span>
+        </div>
+        <div class="bar thin"><i id="xBar" style="width:0%"></i></div>
+        <p class="hint">14 h 9 min de cursos + 2 h de recursos. Unos 65 minutos diarios.</p>
+      </section>
+      <section class="panel" aria-labelledby="simH">
+        <h2 id="simH">Simulacros (% de aciertos)</h2>
+        <div class="scores" id="scores"></div>
+        <p class="hint">Meta en práctica: 80 % o más. Recuerda: el examen real es adaptativo, de 100 a 125 preguntas.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="helpH">
+    <h2 id="helpH">Ayuda para estudiar</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="quiz">Examen de prueba</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="ask">Pregúntale a Claude</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="cards">Tarjetas rápidas</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="tips">Consejos y enlaces</button>
+    </div>
+
+    <div data-pane="quiz" class="stack">
+      <div class="row">
+        <label for="qDom">Dominio</label>
+        <select id="qDom">
+          <option value="D1">D1 · Security Principles</option>
+          <option value="D2">D2 · Security Governance</option>
+          <option value="D3">D3 · Identity and Access Management</option>
+          <option value="D4">D4 · Networking and Cloud Security</option>
+          <option value="D5">D5 · Security Operations and IR</option>
+          <option value="MIX">Mixto · los cinco dominios</option>
+        </select>
+        <label for="qNum">Preguntas</label>
+        <select id="qNum"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option></select>
+        <button class="btn" id="qStart">Generar examen</button>
+      </div>
+      <p class="hint" id="qHint">Preguntas en inglés, como el examen real, con la explicación en español. Las genera Claude con tu propia cuenta; la primera vez te pedirá permiso.</p>
+      <div id="qArea"></div>
+    </div>
+
+    <div data-pane="ask" class="stack" hidden>
+      <label for="askBox">Escribe tu duda sobre cualquier tema del CC</label>
+      <textarea id="askBox" placeholder="Ej.: ¿Cuál es la diferencia entre RTO y RPO? Dame un ejemplo de un banco."></textarea>
+      <div class="row">
+        <button class="btn" id="askBtn">Preguntar</button>
+        <button class="btn ghost" id="askStop" hidden>Detener</button>
+        <span class="hint" id="askNote"></span>
+      </div>
+      <div class="answer" id="askOut">La respuesta aparecerá aquí, en español y con los términos en inglés que verás en el examen.</div>
+    </div>
+
+    <div data-pane="cards" class="stack" hidden>
+      <div class="row">
+        <label for="cDom">Tema</label>
+        <select id="cDom"><option value="ALL">Todos</option><option value="D1">D1</option><option value="D2">D2</option><option value="D3">D3</option><option value="D4">D4</option><option value="D5">D5</option></select>
+        <span class="hint mono" id="cPos"></span>
+      </div>
+      <div class="card" id="card" tabindex="0" role="button" aria-label="Voltear tarjeta"><span class="term" id="cTerm"></span><span class="def" id="cDef"></span><span class="hint" id="cFlip">Toca para ver la respuesta</span></div>
+      <div class="row"><button class="btn ghost" id="cPrev">Anterior</button><button class="btn" id="cNext">Siguiente</button><button class="btn ghost" id="cShuf">Mezclar</button></div>
+    </div>
+
+    <div data-pane="tips" class="stack" hidden>
+      <ul class="links">
+        <li><strong>Lee la pregunta completa.</strong> Busca palabras como <em>FIRST</em>, <em>BEST</em>, <em>MOST</em>: varias opciones pueden ser correctas, pero solo una es la mejor.</li>
+        <li><strong>Piensa como gerente de seguridad.</strong> La seguridad de las personas va primero; luego políticas y procesos antes que soluciones técnicas.</li>
+        <li><strong>No puedes regresar.</strong> El examen es adaptativo: responde, sigue y no intentes adivinar tu resultado.</li>
+        <li><strong>Ritmo:</strong> unos 60 segundos por pregunta (2 horas, de 100 a 125 preguntas).</li>
+      </ul>
+      <ul class="links">
+        <li><a href="https://www.isc2.org/certifications/cc/cc-certification-exam-outline" target="_blank" rel="noopener">Outline oficial del CC (ISC2)</a></li>
+        <li><a href="https://www.isc2.org/certifications/cc" target="_blank" rel="noopener">Página oficial de la certificación CC</a></li>
+        <li><a href="https://home.pearsonvue.com/isc2" target="_blank" rel="noopener">Pearson VUE · tu cita del examen</a></li>
+        <li><a href="https://www.isc2.org/ethics" target="_blank" rel="noopener">Código de Ética de ISC2</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="planH" class="stack">
+    <h2 id="planH">Plan semanal detallado</h2>
+    <p class="hint">Rutina de cada día: unos 90 minutos entre semana y de 2.5 a 3 horas el fin de semana. Si te atrasas, nunca te saltes la práctica: pasa el resto de Percipio al fin de semana.</p>
+    <ol class="routine">
+      <li><span class="min">5 min</span>Tarjetas rápidas del tema de ayer</li>
+      <li><span class="min">60–65 min</span>Cursos de Percipio del tema del día</li>
+      <li><span class="min">15 min</span>Examen de prueba de 5 a 10 preguntas</li>
+      <li><span class="min">5 min</span>Marca el día y anota lo que más te costó</li>
+    </ol>
+    <div id="plan" class="stack"></div>
+  </section>
+
+  <div class="foot">
+    <span id="saveState">Cargando avance…</span>
+    <span id="resetWrap"><button class="linkbtn" id="resetBtn">Reiniciar avance</button></span>
+  </div>
+</div>
+
+<script>
+const EXAM = new Date("2026-11-26T12:30:00-06:00");
+const DOMAINS = [
+  {k:"D1",n:"Security Principles",w:"24%"},
+  {k:"D2",n:"Security Governance",w:"17.3%"},
+  {k:"D3",n:"Identity and Access Management",w:"20%"},
+  {k:"D4",n:"Networking and Cloud Security",w:"21.3%"},
+  {k:"D5",n:"Security Operations and IR",w:"17.3%"},
+  {k:"SIM",n:"Simulacros y repaso",w:""}
+];
+const PLAN = [
+  {w:"Semana 1 · 11–15 nov · Dominios 1, 2 y 3",days:[
+    {id:"2026-11-11",dom:["D1"],h:"90 min",t:"Diagnóstico + D1 conceptos base",per:"Inicia D1: CIA, autenticación, MFA, no repudio, privacidad.",pr:"Examen de prueba Mixto, 15 preguntas. Anota el % en Simulacros.",meta:"Explicar CIA con un ejemplo de tu trabajo."},
+    {id:"2026-11-12",dom:["D1"],h:"90 min",t:"D1 riesgo, controles y ética",per:"Termina D1: gestión de riesgo, tipos de controles, Código de Ética.",pr:"Examen D1, 10 preguntas.",meta:"Decir los 4 cánones en orden; 70 % o más."},
+    {id:"2026-11-13",dom:["D2"],h:"90 min",t:"D2 gobernanza y continuidad",per:"D2: políticas, estándares, procedimientos, leyes, BC/DR.",pr:"Tarjetas D2.",meta:"Distinguir RTO de RPO y los tipos de sitio alterno."},
+    {id:"2026-11-14",dom:["D2","D3"],h:"2.5 h",t:"D2 cierre + D3 inicio",per:"Termina D2 (concienciación, efectividad). Inicia D3: DAC, MAC, RBAC, mínimo privilegio.",pr:"Examen D2, 10 preguntas.",meta:"Explicar separación de funciones con un caso real."},
+    {id:"2026-11-15",dom:["D3"],h:"2.5 h",t:"D3 identidades + revisión semanal",per:"Termina D3: ciclo de vida de identidades, cuentas privilegiadas, controles físicos.",pr:"Examen D3, 10 preguntas. Repasa los errores de la semana.",meta:"Revisión: ¿la página dice que vas al día?"}
+  ]},
+  {w:"Semana 2 · 16–22 nov · Dominios 4 y 5, simulacro 1",days:[
+    {id:"2026-11-16",dom:["D4"],h:"90 min",t:"D4 redes y ataques",per:"D4: OSI, TCP/IP, puertos, IPv4/IPv6, ataques, firewall, IDS/IPS.",pr:"Tarjetas D4 (puertos y OSI).",meta:"Saber las 7 capas OSI y 6 puertos comunes."},
+    {id:"2026-11-17",dom:["D4"],h:"90 min",t:"D4 arquitectura y nube",per:"Segmentación, DMZ, VLAN, VPN, zero trust, modelos de nube.",pr:"Examen D4, 10 preguntas.",meta:"Explicar responsabilidad compartida en IaaS vs. SaaS."},
+    {id:"2026-11-18",dom:["D5"],h:"90 min",t:"D5 datos y hardening",per:"D5: clasificación, retención, destrucción, cifrado, hashing, parches, logging.",pr:"Tarjetas D5.",meta:"Distinguir hash de cifrado, y simétrico de asimétrico."},
+    {id:"2026-11-19",dom:["D5"],h:"90 min",t:"D5 operaciones e incidentes",per:"Termina D5: activos, pruebas, triage, inteligencia de amenazas, respuesta a incidentes.",pr:"Examen D5, 10 preguntas.",meta:"Ordenar las fases de respuesta a incidentes."},
+    {id:"2026-11-20",dom:["SIM"],h:"90 min",t:"IA + tu punto débil",per:"Temas de IA en los cursos; empieza los recursos adicionales.",pr:"Examen del dominio con peor %. Lleva 3 dudas a \"Pregúntale a Claude\".",meta:"Cerrar todos los cursos de Percipio."},
+    {id:"2026-11-21",dom:["SIM"],h:"3 h",t:"Simulacro completo 1",per:"Examen de práctica completo de Percipio: 100 preguntas, 2 h, sin volver atrás.",pr:"Anota el % en Simulacros.",meta:"70 % o más."},
+    {id:"2026-11-22",dom:["SIM"],h:"2.5 h",t:"Análisis del simulacro 1",per:"Vuelve a ver las lecciones de los temas fallados.",pr:"Tarjetas de tus dominios débiles.",meta:"Lista de los 10 conceptos que más fallaste."}
+  ]},
+  {w:"Semana del examen · 23–26 nov",days:[
+    {id:"2026-11-23",dom:["SIM"],h:"2 h",t:"Simulacro completo 2",per:"100 preguntas, 2 h, mismas condiciones.",pr:"Anota el % en Simulacros.",meta:"80 % o más."},
+    {id:"2026-11-24",dom:["SIM"],h:"90 min",t:"Errores + tarjetas",per:"Repasa los errores del simulacro 2.",pr:"Todas las tarjetas, mezcladas.",meta:"Ninguna tarjeta dudosa."},
+    {id:"2026-11-25",dom:["SIM"],h:"1 h máx.",t:"Repaso ligero y preparación",per:"Solo repaso suave, nada nuevo.",pr:"Deja lista tu identificación y la ruta.",meta:"Dormir temprano."},
+    {id:"2026-11-26",dom:[],exam:true,t:"Examen CC · 12:30 PM",per:"Desayuno completo y 15 min de tarjetas.",pr:"Sal a las 11:00; llega a las 12:00 a la Torre 1, 4.º nivel, oficina 418.",meta:"Aprobar."}
+  ]}
+];
+const SCORES = [{k:"diag",n:"Diagnóstico (11 nov)"},{k:"s1",n:"Simulacro 1 (21 nov)"},{k:"s2",n:"Simulacro 2 (23 nov)"}];
+const STUDY = PLAN.flatMap(w=>w.days).filter(d=>!d.exam);
+const MAX = {courses:14, extras:3};
+
+let state = {done:{}, courses:0, extras:0, scores:{}, quiz:{}};
+let store = null;   // "db" | "local" | null
+let ref = null;
+let writing = false, queued = false;
+
+function todayStr(){
+  const n = new Date();
+  return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
+}
+function fmtDay(id){
+  const d = new Date(id+"T12:00:00");
+  const s = d.toLocaleDateString("es-GT",{weekday:"short",day:"numeric",month:"short"});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+const $ = id => document.getElementById(id);
+
+function render(){
+  const today = todayStr();
+  // countdown
+  const ms = EXAM - new Date();
+  const days = Math.ceil((new Date(EXAM.toDateString()) - new Date(new Date().toDateString()))/86400000);
+  if (ms <= 0){ $("countdown").textContent = "Hoy fue"; $("countdownSub").textContent = "el examen"; }
+  else if (days === 0){ $("countdown").textContent = "Hoy"; $("countdownSub").textContent = "examen a las 12:30 PM"; }
+  else { $("countdown").textContent = days + (days===1?" día":" días"); $("countdownSub").textContent = "para el jueves 26 de noviembre"; }
+
+  // progress
+  const doneN = STUDY.filter(d=>state.done[d.id]).length;
+  $("doneCount").textContent = doneN+"/"+STUDY.length;
+  $("doneBar").style.width = (doneN/STUDY.length*100)+"%";
+
+  // pace: days due up to yesterday (today counts once done)
+  const due = STUDY.filter(d=>d.id < today).length;
+  const dueToday = STUDY.some(d=>d.id===today);
+  const diff = doneN - due;
+  const pace = $("pace"), sub = $("paceSub");
+  if (today < STUDY[0].id){ pace.className="pill ok"; pace.textContent="Arranca mañana"; sub.textContent="Primer día: diagnóstico + Dominio 1."; }
+  else if (diff < 0){ const n=-diff; pace.className = n>=3?"pill bad":"pill warn"; pace.textContent = "Atrasado "+n+(n===1?" día":" días"); sub.textContent = n>=3 ? "Junta dos días cortos o usa el fin de semana para recuperar." : "Recupéralo sumando 30 min extra los próximos días."; }
+  else if (diff > 0){ pace.className="pill ok"; pace.textContent="Adelantado "+diff+(diff===1?" día":" días"); sub.textContent="Usa el margen para más preguntas de práctica."; }
+  else { pace.className="pill ok"; pace.textContent="Al día"; sub.textContent = dueToday && !state.done[today] ? "Te falta marcar el día de hoy." : "Vas según el plan."; }
+
+  // domains
+  $("domains").innerHTML = "";
+  for (const dm of DOMAINS){
+    const items = STUDY.filter(d=>d.dom.includes(dm.k));
+    const n = items.filter(d=>state.done[d.id]).length;
+    const el = document.createElement("div"); el.className="dom";
+    el.innerHTML = `<span class="code">${dm.k}</span><span class="name"></span><span class="w">${n}/${items.length}${dm.w?" · "+dm.w:""}</span><div class="bar thin"><i style="width:${items.length?n/items.length*100:0}%"></i></div>`;
+    const qz = state.quiz && state.quiz[dm.k];
+    el.querySelector(".name").textContent = dm.n + (qz ? `  ·  práctica ${qz.right}/${qz.total}` : "");
+    $("domains").appendChild(el);
+  }
+
+  // percipio
+  $("cTxt").textContent = state.courses+"/14"; $("cBar").style.width = (state.courses/14*100)+"%";
+  $("xTxt").textContent = state.extras+"/3"; $("xBar").style.width = (state.extras/3*100)+"%";
+
+  // scores
+  for (const s of SCORES){
+    const v = state.scores[s.k];
+    const inp = $("sc-"+s.k);
+    if (document.activeElement !== inp) inp.value = (v ?? "");
+    const bar = $("scb-"+s.k);
+    bar.style.width = (v ? Math.min(v,100) : 0)+"%";
+    bar.className = v>=80 ? "ok" : (v ? "warn" : "");
+  }
+
+  // plan
+  for (const w of PLAN) for (const d of w.days){
+    const row = $("day-"+d.id);
+    row.classList.toggle("done", !!state.done[d.id]);
+    row.classList.toggle("today", d.id===today);
+    row.classList.toggle("late", d.id < today);
+    const cb = row.querySelector("input"); if (cb) cb.checked = !!state.done[d.id];
+  }
+}
+
+function buildStatic(){
+  const sc = $("scores");
+  for (const s of SCORES){
+    const el = document.createElement("div"); el.className="score";
+    el.innerHTML = `<label for="sc-${s.k}"></label><input id="sc-${s.k}" type="number" min="0" max="100" inputmode="numeric" placeholder="%"><div class="bar thin"><i id="scb-${s.k}"></i></div>`;
+    el.querySelector("label").textContent = s.n;
+    sc.appendChild(el);
+    el.querySelector("input").addEventListener("change", e=>{
+      const v = e.target.value === "" ? null : Math.max(0, Math.min(100, Math.round(+e.target.value)));
+      if (v === null) delete state.scores[s.k]; else state.scores[s.k] = v;
+      save(); render();
+    });
+  }
+  const plan = $("plan");
+  for (const w of PLAN){
+    const wk = document.createElement("div"); wk.className="week";
+    const h = document.createElement("h3"); h.textContent = w.w; wk.appendChild(h);
+    for (const d of w.days){
+      const row = document.createElement(d.exam ? "div" : "label");
+      row.className = "day"+(d.exam?" exam":""); row.id = "day-"+d.id;
+      const tag = d.exam ? "EXAMEN" : d.dom.join(" + ");
+      row.innerHTML = `${d.exam?'<span aria-hidden="true" style="width:20px"></span>':`<input type="checkbox" id="cb-${d.id}">`}<span class="date">${fmtDay(d.id)}${d.h?`<span class="hrs">${d.h}</span>`:""}</span><span class="txt"><span class="t" style="display:block"></span><span class="det"><span class="k">${d.exam?"Antes":"Percipio"}</span><span class="v"></span><span class="k">${d.exam?"Llegada":"Práctica"}</span><span class="v"></span><span class="k">Meta</span><span class="v"></span></span></span><span class="tag">${tag==="SIM"?"REPASO":tag}</span>`;
+      row.querySelector(".t").textContent = d.t;
+      const vs = row.querySelectorAll(".det .v"); vs[0].textContent = d.per; vs[1].textContent = d.pr; vs[2].textContent = d.meta;
+      if (!d.exam) row.querySelector("input").addEventListener("change", e=>{
+        if (e.target.checked) state.done[d.id] = true; else delete state.done[d.id];
+        save(); render();
+      });
+      wk.appendChild(row);
+    }
+    plan.appendChild(wk);
+  }
+  document.querySelectorAll("[data-step]").forEach(b=>b.addEventListener("click",()=>{
+    const k = b.dataset.step; state[k] = Math.max(0, Math.min(MAX[k], state[k] + (+b.dataset.d)));
+    save(); render();
+  }));
+  $("resetBtn").addEventListener("click", showConfirm);
+}
+
+function showConfirm(){
+  const w = $("resetWrap");
+  w.innerHTML = '<span class="confirm">¿Borrar todo el avance? <button class="danger" id="yes">Sí, borrar</button><button id="no">Cancelar</button></span>';
+  $("yes").onclick = ()=>{ state = {done:{}, courses:0, extras:0, scores:{}, quiz:{}}; save(); render(); restoreReset(); };
+  $("no").onclick = restoreReset;
+}
+function restoreReset(){ $("resetWrap").innerHTML = '<button class="linkbtn" id="resetBtn">Reiniciar avance</button>'; $("resetBtn").addEventListener("click", showConfirm); }
+
+function setSave(t){ $("saveState").textContent = t; }
+
+async function save(){
+  if (store === "db"){
+    if (writing){ queued = true; return; }
+    writing = true; setSave("Guardando…");
+    try { await ref.set({...state, updatedAt:new Date().toISOString()}); setSave("Avance guardado en la nube"); }
+    catch(e){ setSave("No se pudo guardar. Revisa tu conexión e intenta de nuevo."); }
+    writing = false;
+    if (queued){ queued = false; save(); }
+  } else {
+    try { localStorage.setItem("cc-tracker", JSON.stringify(state)); setSave("Avance guardado en este navegador"); }
+    catch(e){ setSave("Este navegador no permite guardar el avance."); }
+  }
+}
+
+function useLocal(){
+  store = "local";
+  try { const s = JSON.parse(localStorage.getItem("cc-tracker")||"null"); if (s) state = {...state, ...s}; } catch(e){}
+  setSave("Avance guardado en este navegador");
+  render();
+}
+
+/* ---------- Ayuda ---------- */
+const TOPICS = {
+  D1:"Security Principles: CIA triad, authentication factors and MFA, non-repudiation, privacy, risk management (identify, assess, treat), security control types (technical, administrative, physical), ISC2 Code of Ethics canons",
+  D2:"Security Governance: governance, policies, standards, procedures, guidelines, laws and regulations, business continuity and disaster recovery (BIA, RTO, RPO, redundancy, alternate sites), security awareness training, measuring security effectiveness",
+  D3:"Identity and Access Management: physical and logical access controls, DAC, MAC, RBAC, least privilege, separation of duties, identity lifecycle (provisioning, changes, deprovisioning), privileged accounts",
+  D4:"Networking and Cloud Security: OSI and TCP/IP models, common ports, IPv4/IPv6, network attacks (DoS/DDoS, MITM, malware), firewalls, IDS/IPS, segmentation, DMZ, VLAN, VPN, NAC, zero trust, cloud service and deployment models, shared responsibility",
+  D5:"Security Operations and Incident Response: data classification, retention and destruction, encryption and hashing, system hardening, configuration and patch management, logging and monitoring, asset management, security testing, event triage, threat intelligence, incident response phases",
+};
+let samplePromise = null;
+function getSample(){ if (!samplePromise) samplePromise = (async()=>{ try { return window.claude ? await window.claude.use("sample") : null; } catch(e){ return null; } })(); return samplePromise; }
+function sampleMsg(code){
+  return ({
+    not_granted:"No diste permiso para usar Claude en esta página. Puedes activarlo en el menú de permisos de la página.",
+    sampling_disabled:"Claude no está disponible para tu cuenta en esta página.",
+    rate_limited:"Muchas solicitudes seguidas o llegaste a tu límite de uso. Espera unos minutos e intenta de nuevo.",
+    session_expired:"Tu sesión expiró. Vuelve a iniciar sesión en Claude.",
+    invalid_json:"La respuesta llegó incompleta. Pulsa de nuevo para generar otro examen.",
+    refused:"Claude no pudo responder esa solicitud. Intenta redactarla de otra forma.",
+  })[code] || "No se pudo completar. Revisa tu conexión e intenta de nuevo.";
+}
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===t ? "true":"false"));
+  document.querySelectorAll("[data-pane]").forEach(p=>p.hidden = p.dataset.pane !== t.dataset.tab);
+}));
+
+// quiz
+let quiz = null;
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+$("qStart").addEventListener("click", async ()=>{
+  const dom = $("qDom").value, num = +$("qNum").value;
+  const area = $("qArea");
+  const sample = await getSample();
+  if (!sample){ area.innerHTML = '<p class="hint">El generador de exámenes solo funciona dentro de Claude. Abre la página desde la app o claude.ai.</p>'; return; }
+  $("qStart").disabled = true;
+  area.innerHTML = '<p class="hint">Generando preguntas… puede tardar hasta un minuto.</p>';
+  const topic = dom === "MIX" ? Object.values(TOPICS).join("\n") : TOPICS[dom];
+  const prompt = `You are writing practice questions for the ISC2 Certified in Cybersecurity (CC) exam, outline effective September 1, 2026 (entry level; AI-related security risks may appear inside any domain).
+Write ${num} NEW multiple-choice questions on these topics:
+${topic}
+Rules: question and options in English, in the ISC2 style (scenario-based, words like BEST, FIRST, MOST when apt). Exactly 4 options, one correct; vary which position is correct. Explanation in simple Spanish (Guatemala), 2-3 sentences, saying why the correct one is best and naming the key term in English.
+Reply with only a JSON array: [{"q":"...","options":["...","...","...","..."],"answer":0,"explain":"...","domain":"D1"}]`;
+  try {
+    const data = await sample.json(prompt, {cache:false});
+    const qs = (Array.isArray(data) ? data : []).filter(x=>x && x.q && Array.isArray(x.options) && x.options.length===4 && Number.isInteger(x.answer) && x.answer>=0 && x.answer<4);
+    if (!qs.length) throw {code:"invalid_json"};
+    quiz = {dom, qs, i:0, right:0, answered:false};
+    showQ();
+  } catch(e){
+    area.innerHTML = `<p class="hint">${esc(sampleMsg(e && e.code))}</p>`;
+  } finally { $("qStart").disabled = false; }
+});
+function showQ(){
+  const area = $("qArea"), q = quiz.qs[quiz.i];
+  area.innerHTML = `<div class="q"><div class="qhead">Pregunta ${quiz.i+1} de ${quiz.qs.length} · aciertos ${quiz.right}</div><div class="qtext">${esc(q.q)}</div><div class="opts">${q.options.map((o,k)=>`<button class="opt" data-k="${k}"><b>${"ABCD"[k]}</b><span>${esc(o)}</span></button>`).join("")}</div><div id="qFeed"></div></div>`;
+  area.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>answerQ(+b.dataset.k)));
+}
+function answerQ(k){
+  const q = quiz.qs[quiz.i], btns = $("qArea").querySelectorAll(".opt");
+  btns.forEach((b,j)=>{ b.disabled = true; if (j===q.answer) b.classList.add("right"); else if (j===k) b.classList.add("wrong"); });
+  const ok = k === q.answer; if (ok) quiz.right++;
+  const last = quiz.i === quiz.qs.length-1;
+  $("qFeed").innerHTML = `<div class="explain"><strong>${ok?"Correcto.":"La respuesta correcta es "+"ABCD"[q.answer]+"."}</strong> ${esc(q.explain||"")}</div><div class="row" style="margin-top:10px"><button class="btn" id="qNext">${last?"Ver resultado":"Siguiente"}</button></div>`;
+  $("qNext").addEventListener("click", ()=>{ if (last) finishQ(); else { quiz.i++; showQ(); } });
+}
+function finishQ(){
+  const pct = Math.round(quiz.right/quiz.qs.length*100);
+  const key = quiz.dom === "MIX" ? "SIM" : quiz.dom;
+  state.quiz = state.quiz || {};
+  state.quiz[key] = {right:quiz.right, total:quiz.qs.length, date:todayStr()};
+  save(); render();
+  const msg = pct>=80 ? "Excelente, vas listo en este tema." : pct>=60 ? "Bien, repasa las que fallaste." : "Repasa este dominio en Percipio antes de otro intento.";
+  $("qArea").innerHTML = `<div class="q"><div class="qhead">Resultado</div><div class="qtext mono">${quiz.right}/${quiz.qs.length} · ${pct} %</div><p class="hint">${msg} Quedó guardado en tu avance por dominio.</p><div class="row"><button class="btn" id="qAgain">Otro examen</button></div></div>`;
+  $("qAgain").addEventListener("click", ()=>$("qStart").click());
+}
+
+// ask
+let askCtl = null;
+$("askStop").addEventListener("click", ()=>askCtl && askCtl.abort());
+$("askBtn").addEventListener("click", async ()=>{
+  const qtext = $("askBox").value.trim();
+  if (!qtext){ $("askNote").textContent = "Escribe tu pregunta primero."; return; }
+  const sample = await getSample();
+  if (!sample){ $("askOut").textContent = "Esta función solo funciona dentro de Claude. Abre la página desde la app o claude.ai."; return; }
+  askCtl = new AbortController();
+  $("askBtn").disabled = true; $("askStop").hidden = false; $("askNote").textContent = "";
+  $("askOut").textContent = "Pensando…";
+  const prompt = `Eres un tutor paciente que prepara a Victor, un profesional de 46 años en Guatemala, para el examen ISC2 Certified in Cybersecurity (CC), outline vigente desde el 1 de septiembre de 2026. Responde en español sencillo, con un ejemplo práctico de la vida laboral y el término en inglés entre paréntesis como aparece en el examen. Máximo 200 palabras. Si aplica, termina con una línea "Clave para el examen:". Usa texto plano, sin Markdown.\n\nPregunta: ${qtext}`;
+  try {
+    await sample(prompt, {signal:askCtl.signal, onText:({text})=>{ $("askOut").textContent = text; }});
+  } catch(e){
+    if (e && e.code === "cancelled"){ $("askOut").textContent = e.text || "Detenido."; }
+    else { $("askOut").textContent = (e && e.text) ? e.text : ""; $("askNote").textContent = sampleMsg(e && e.code); }
+  } finally { $("askBtn").disabled = false; $("askStop").hidden = true; }
+});
+
+// flashcards
+const CARDS = [
+  ["D1","CIA triad","Confidencialidad, Integridad y Disponibilidad (Confidentiality, Integrity, Availability): los tres objetivos básicos de la seguridad."],
+  ["D1","Non-repudiation","No repudio: quien hizo una acción no puede negarla. Se logra con firmas digitales y registros."],
+  ["D1","MFA","Autenticación multifactor: dos o más tipos distintos de factor (algo que sabes, que tienes, que eres)."],
+  ["D1","Risk = Likelihood × Impact","Riesgo es la probabilidad de que una amenaza explote una vulnerabilidad por el impacto que causaría."],
+  ["D1","Risk treatment","Opciones ante un riesgo: evitar (avoid), mitigar (mitigate), transferir (transfer, p. ej. seguro) o aceptar (accept)."],
+  ["D1","Control types","Técnicos/lógicos (firewall), administrativos (políticas, capacitación) y físicos (cerraduras, guardias)."],
+  ["D1","ISC2 Code of Ethics","4 cánones en orden: proteger la sociedad; actuar con honor y legalidad; servir con diligencia a los principales; avanzar y proteger la profesión."],
+  ["D2","Policy vs. Standard vs. Procedure","Política: qué y por qué (alto nivel, obligatoria). Estándar: requisito específico. Procedimiento: pasos detallados. Guía: recomendación opcional."],
+  ["D2","BIA","Business Impact Analysis: identifica procesos críticos y el impacto de su interrupción. Base de la continuidad del negocio."],
+  ["D2","RTO","Recovery Time Objective: tiempo máximo aceptable para restaurar un servicio después de una interrupción."],
+  ["D2","RPO","Recovery Point Objective: cuánta pérdida de datos (medida en tiempo) es aceptable. Define la frecuencia de respaldos."],
+  ["D2","Hot / Warm / Cold site","Sitio alterno caliente: listo en minutos u horas. Tibio: equipo parcial. Frío: solo espacio y energía; el más barato y lento."],
+  ["D3","Least privilege","Mínimo privilegio: cada usuario recibe solo los accesos que necesita para su trabajo, nada más."],
+  ["D3","Separation of duties","Separación de funciones: una tarea crítica se divide entre personas para evitar fraude o errores de una sola."],
+  ["D3","DAC / MAC / RBAC","DAC: el dueño decide. MAC: el sistema decide por etiquetas de clasificación. RBAC: acceso según el rol o puesto."],
+  ["D3","Deprovisioning","Baja de identidad: quitar accesos de inmediato cuando alguien sale de la empresa o cambia de puesto."],
+  ["D4","OSI model","7 capas: Física, Enlace, Red, Transporte, Sesión, Presentación, Aplicación."],
+  ["D4","Common ports","22 SSH · 25 SMTP · 53 DNS · 80 HTTP · 443 HTTPS · 3389 RDP. Inseguros: 21 FTP, 23 Telnet."],
+  ["D4","IDS vs. IPS","IDS detecta y alerta. IPS detecta y bloquea en línea."],
+  ["D4","DMZ","Zona desmilitarizada: segmento de red entre Internet y la red interna para servidores públicos."],
+  ["D4","Zero trust","Nunca confiar, siempre verificar: cada acceso se autentica y autoriza, sin importar si viene de dentro de la red."],
+  ["D4","Shared responsibility","En la nube, el proveedor protege la infraestructura y el cliente sus datos y accesos. En SaaS el proveedor hace más; en IaaS, el cliente."],
+  ["D5","Hashing vs. Encryption","Hash: una vía, verifica integridad (SHA-256). Cifrado: reversible con llave, protege confidencialidad (AES, RSA)."],
+  ["D5","Symmetric vs. Asymmetric","Simétrico: una misma llave, rápido (AES). Asimétrico: par pública/privada, para intercambio y firmas (RSA)."],
+  ["D5","Data lifecycle","Crear, almacenar, usar, compartir, archivar y destruir. La destrucción segura incluye borrado seguro, degaussing y destrucción física."],
+  ["D5","Hardening","Endurecimiento: quitar servicios innecesarios, cambiar contraseñas por defecto, aplicar parches y configuraciones seguras."],
+  ["D5","Incident response phases","Preparación; Detección y análisis; Contención, erradicación y recuperación; Actividades posteriores (lecciones aprendidas)."],
+  ["D5","Event vs. Incident","Evento: algo observable. Incidente: evento que afecta o amenaza la confidencialidad, integridad o disponibilidad."],
+];
+let deck = CARDS.slice(), ci = 0, flipped = false;
+function showCard(){
+  if (!deck.length) return;
+  const c = deck[ci];
+  $("cTerm").textContent = c[1];
+  $("cDef").textContent = flipped ? c[2] : "";
+  $("cFlip").textContent = flipped ? c[0] : "Toca para ver la respuesta";
+  $("cPos").textContent = (ci+1)+" / "+deck.length;
+}
+function setDeck(){ const v = $("cDom").value; deck = CARDS.filter(c=>v==="ALL"||c[0]===v); ci = 0; flipped = false; showCard(); }
+$("card").addEventListener("click", ()=>{ flipped = !flipped; showCard(); });
+$("card").addEventListener("keydown", e=>{ if (e.key===" "||e.key==="Enter"){ e.preventDefault(); flipped=!flipped; showCard(); }});
+$("cNext").addEventListener("click", ()=>{ ci = (ci+1)%deck.length; flipped=false; showCard(); });
+$("cPrev").addEventListener("click", ()=>{ ci = (ci-1+deck.length)%deck.length; flipped=false; showCard(); });
+$("cShuf").addEventListener("click", ()=>{ for (let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } ci=0; flipped=false; showCard(); });
+$("cDom").addEventListener("change", setDeck);
+showCard();
+
+buildStatic();
+render();
+
+(async ()=>{
+  let db = null;
+  try { db = window.claude && await window.claude.use("db"); } catch(e){ db = null; }
+  if (!db){ useLocal(); return; }
+  store = "db"; ref = db.doc("progress/victor");
+  const timer = setTimeout(()=>setSave("No se pudo conectar aún con el avance guardado."), 10000);
+  ref.onSnapshot(snap=>{
+    if (!snap.metadata.fromCache) clearTimeout(timer);
+    if (snap.exists){
+      const d = snap.data();
+      state = {done:{...(d.done||{})}, courses:d.courses||0, extras:d.extras||0, scores:{...(d.scores||{})}, quiz:JSON.parse(JSON.stringify(d.quiz||{}))};
+    }
+    if (!snap.metadata.hasPendingWrites) setSave(snap.exists ? "Avance guardado en la nube" : "Marca tu primer día para empezar a guardar.");
+    render();
+  }, ()=>{ clearTimeout(timer); useLocal(); });
+})();
+
+setInterval(render, 60000);
+</script>
+
+</body></html>
