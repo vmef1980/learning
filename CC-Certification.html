@@ -124,6 +124,16 @@ textarea{width:100%;min-height:80px;resize:vertical}
 .card .def{font-size:15px;max-width:56ch}
 .links{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .links a{color:var(--accent);font-weight:500}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:13px;color:var(--muted)}
+.field input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.field.act{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}
+.alert{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:10px;padding:12px 14px;font-size:14px}
+.alert.warn{background:var(--warn-soft);color:var(--ink);border:1px solid var(--warn)}
+.alert.bad{background:var(--bad-soft);color:var(--ink);border:1px solid var(--bad)}
+.day.buffer{background:transparent;border-style:dashed;cursor:default}
+.day.buffer .tag{background:var(--line);color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
 </style>
 
@@ -131,7 +141,7 @@ textarea{width:100%;min-height:80px;resize:vertical}
   <header>
     <div class="eyebrow">ISC2 Certified in Cybersecurity · Outline 2026</div>
     <h1>Avance de Victor hacia el CC</h1>
-    <p class="sub">Plan reajustado: inicia el miércoles 11 de noviembre. Examen el jueves 26 a las 12:30 PM, Universidad Galileo.</p>
+    <p class="sub" id="headSub">Cargando tu plan…</p>
   </header>
 
   <section class="summary" aria-label="Resumen">
@@ -146,10 +156,21 @@ textarea{width:100%;min-height:80px;resize:vertical}
       <span class="small" id="paceSub">–</span>
     </div>
     <div class="tile">
-      <span class="eyebrow">Días completados</span>
-      <span class="big" id="doneCount">0/15</span>
+      <span class="eyebrow">Sesiones completadas</span>
+      <span class="big" id="doneCount">0/31</span>
       <div class="bar"><i id="doneBar" style="width:0%"></i></div>
     </div>
+  </section>
+
+  <section class="panel" aria-labelledby="setH">
+    <h2 id="setH">Fechas del plan</h2>
+    <div class="settings">
+      <div class="field"><label for="setStart">Fecha de inicio</label><input type="date" id="setStart"></div>
+      <div class="field"><label for="setExam">Fecha del examen</label><input type="date" id="setExam"></div>
+      <div class="field"><label for="setTime">Hora del examen</label><input type="time" id="setTime" step="900"></div>
+      <div class="field act"><button class="btn" id="setApply">Aplicar fechas</button><button class="btn ghost" id="setReset">Volver al plan sin reajustes</button></div>
+    </div>
+    <p class="hint" id="setMsg">Cambia las fechas y la página reparte las 31 sesiones entre tu inicio y tu examen. Lo que ya marcaste se conserva.</p>
   </section>
 
   <div class="grid2">
@@ -170,7 +191,7 @@ textarea{width:100%;min-height:80px;resize:vertical}
           <span class="ctl"><button class="sbtn" data-step="extras" data-d="-1" aria-label="Quitar un recurso">−</button><button class="sbtn" data-step="extras" data-d="1" aria-label="Sumar un recurso">+</button></span>
         </div>
         <div class="bar thin"><i id="xBar" style="width:0%"></i></div>
-        <p class="hint">14 h 9 min de cursos + 2 h de recursos. Unos 65 minutos diarios.</p>
+        <p class="hint">14 h 9 min de cursos + 2 h de recursos. Unos 40 minutos diarios hasta el 5 de diciembre.</p>
       </section>
       <section class="panel" aria-labelledby="simH">
         <h2 id="simH">Simulacros (% de aciertos)</h2>
@@ -247,13 +268,15 @@ textarea{width:100%;min-height:80px;resize:vertical}
 
   <section aria-labelledby="planH" class="stack">
     <h2 id="planH">Plan semanal detallado</h2>
-    <p class="hint">Rutina de cada día: unos 90 minutos entre semana y de 2.5 a 3 horas el fin de semana. Si te atrasas, nunca te saltes la práctica: pasa el resto de Percipio al fin de semana.</p>
+    <p class="hint">Rutina: 60 minutos entre semana y 2 horas el fin de semana. Si sobran días, la página agrega días libres de recuperación (viernes primero); si faltan, junta sesiones del mismo dominio.</p>
     <ol class="routine">
       <li><span class="min">5 min</span>Tarjetas rápidas del tema de ayer</li>
-      <li><span class="min">60–65 min</span>Cursos de Percipio del tema del día</li>
-      <li><span class="min">15 min</span>Examen de prueba de 5 a 10 preguntas</li>
+      <li><span class="min">40 min</span>Cursos de Percipio del tema del día</li>
+      <li><span class="min">10 min</span>Examen de prueba o tarjetas del día</li>
       <li><span class="min">5 min</span>Marca el día y anota lo que más te costó</li>
     </ol>
+    <p class="hint mono" id="planInfo"></p>
+    <div id="planAlert" class="alert" hidden></div>
     <div id="plan" class="stack"></div>
   </section>
 
@@ -264,7 +287,6 @@ textarea{width:100%;min-height:80px;resize:vertical}
 </div>
 
 <script>
-const EXAM = new Date("2026-11-26T12:30:00-06:00");
 const DOMAINS = [
   {k:"D1",n:"Security Principles",w:"24%"},
   {k:"D2",n:"Security Governance",w:"17.3%"},
@@ -273,79 +295,209 @@ const DOMAINS = [
   {k:"D5",n:"Security Operations and IR",w:"17.3%"},
   {k:"SIM",n:"Simulacros y repaso",w:""}
 ];
-const PLAN = [
-  {w:"Semana 1 · 11–15 nov · Dominios 1, 2 y 3",days:[
-    {id:"2026-11-11",dom:["D1"],h:"90 min",t:"Diagnóstico + D1 conceptos base",per:"Inicia D1: CIA, autenticación, MFA, no repudio, privacidad.",pr:"Examen de prueba Mixto, 15 preguntas. Anota el % en Simulacros.",meta:"Explicar CIA con un ejemplo de tu trabajo."},
-    {id:"2026-11-12",dom:["D1"],h:"90 min",t:"D1 riesgo, controles y ética",per:"Termina D1: gestión de riesgo, tipos de controles, Código de Ética.",pr:"Examen D1, 10 preguntas.",meta:"Decir los 4 cánones en orden; 70 % o más."},
-    {id:"2026-11-13",dom:["D2"],h:"90 min",t:"D2 gobernanza y continuidad",per:"D2: políticas, estándares, procedimientos, leyes, BC/DR.",pr:"Tarjetas D2.",meta:"Distinguir RTO de RPO y los tipos de sitio alterno."},
-    {id:"2026-11-14",dom:["D2","D3"],h:"2.5 h",t:"D2 cierre + D3 inicio",per:"Termina D2 (concienciación, efectividad). Inicia D3: DAC, MAC, RBAC, mínimo privilegio.",pr:"Examen D2, 10 preguntas.",meta:"Explicar separación de funciones con un caso real."},
-    {id:"2026-11-15",dom:["D3"],h:"2.5 h",t:"D3 identidades + revisión semanal",per:"Termina D3: ciclo de vida de identidades, cuentas privilegiadas, controles físicos.",pr:"Examen D3, 10 preguntas. Repasa los errores de la semana.",meta:"Revisión: ¿la página dice que vas al día?"}
-  ]},
-  {w:"Semana 2 · 16–22 nov · Dominios 4 y 5, simulacro 1",days:[
-    {id:"2026-11-16",dom:["D4"],h:"90 min",t:"D4 redes y ataques",per:"D4: OSI, TCP/IP, puertos, IPv4/IPv6, ataques, firewall, IDS/IPS.",pr:"Tarjetas D4 (puertos y OSI).",meta:"Saber las 7 capas OSI y 6 puertos comunes."},
-    {id:"2026-11-17",dom:["D4"],h:"90 min",t:"D4 arquitectura y nube",per:"Segmentación, DMZ, VLAN, VPN, zero trust, modelos de nube.",pr:"Examen D4, 10 preguntas.",meta:"Explicar responsabilidad compartida en IaaS vs. SaaS."},
-    {id:"2026-11-18",dom:["D5"],h:"90 min",t:"D5 datos y hardening",per:"D5: clasificación, retención, destrucción, cifrado, hashing, parches, logging.",pr:"Tarjetas D5.",meta:"Distinguir hash de cifrado, y simétrico de asimétrico."},
-    {id:"2026-11-19",dom:["D5"],h:"90 min",t:"D5 operaciones e incidentes",per:"Termina D5: activos, pruebas, triage, inteligencia de amenazas, respuesta a incidentes.",pr:"Examen D5, 10 preguntas.",meta:"Ordenar las fases de respuesta a incidentes."},
-    {id:"2026-11-20",dom:["SIM"],h:"90 min",t:"IA + tu punto débil",per:"Temas de IA en los cursos; empieza los recursos adicionales.",pr:"Examen del dominio con peor %. Lleva 3 dudas a \"Pregúntale a Claude\".",meta:"Cerrar todos los cursos de Percipio."},
-    {id:"2026-11-21",dom:["SIM"],h:"3 h",t:"Simulacro completo 1",per:"Examen de práctica completo de Percipio: 100 preguntas, 2 h, sin volver atrás.",pr:"Anota el % en Simulacros.",meta:"70 % o más."},
-    {id:"2026-11-22",dom:["SIM"],h:"2.5 h",t:"Análisis del simulacro 1",per:"Vuelve a ver las lecciones de los temas fallados.",pr:"Tarjetas de tus dominios débiles.",meta:"Lista de los 10 conceptos que más fallaste."}
-  ]},
-  {w:"Semana del examen · 23–26 nov",days:[
-    {id:"2026-11-23",dom:["SIM"],h:"2 h",t:"Simulacro completo 2",per:"100 preguntas, 2 h, mismas condiciones.",pr:"Anota el % en Simulacros.",meta:"80 % o más."},
-    {id:"2026-11-24",dom:["SIM"],h:"90 min",t:"Errores + tarjetas",per:"Repasa los errores del simulacro 2.",pr:"Todas las tarjetas, mezcladas.",meta:"Ninguna tarjeta dudosa."},
-    {id:"2026-11-25",dom:["SIM"],h:"1 h máx.",t:"Repaso ligero y preparación",per:"Solo repaso suave, nada nuevo.",pr:"Deja lista tu identificación y la ruta.",meta:"Dormir temprano."},
-    {id:"2026-11-26",dom:[],exam:true,t:"Examen CC · 12:30 PM",per:"Desayuno completo y 15 min de tarjetas.",pr:"Sal a las 11:00; llega a las 12:00 a la Torre 1, 4.º nivel, oficina 418.",meta:"Aprobar."}
-  ]}
+// Sesiones en orden. La página les asigna fecha según tu inicio y tu examen.
+const TASKS = [
+  {id:"t01",dom:"D1",t:"Diagnóstico + D1 conceptos base",per:"Inicia D1: tríada CIA, autenticación, factores y MFA.",pr:"Examen de prueba Mixto, 15 preguntas. Anota el % en Simulacros.",meta:"Explicar CIA con un ejemplo de tu trabajo."},
+  {id:"t02",dom:"D1",t:"D1 no repudio, privacidad y riesgo",per:"No repudio, privacidad, gestión de riesgo (identificar, evaluar, tratar).",pr:"Tarjetas D1.",meta:"Nombrar las 4 formas de tratar un riesgo."},
+  {id:"t03",dom:"D1",t:"D1 controles y Código de Ética",per:"Termina D1: tipos de controles y Código de Ética de ISC2.",pr:"Examen D1, 10 preguntas.",meta:"Decir los 4 cánones en orden; 70 % o más."},
+  {id:"t04",dom:"D2",t:"D2 gobernanza",per:"Inicia D2: gobernanza, políticas, estándares, procedimientos, leyes y regulaciones.",pr:"Tarjetas D2.",meta:"Distinguir política, estándar, procedimiento y guía."},
+  {id:"t05",dom:"D2",t:"D2 continuidad y recuperación",per:"BC/DR: BIA, RTO, RPO, redundancia, sitios alternos.",pr:"Tarjetas D2.",meta:"Explicar RTO vs. RPO con un ejemplo."},
+  {id:"t06",dom:"D2",t:"D2 concienciación y efectividad",per:"Termina D2: capacitación en seguridad y medición de efectividad.",pr:"Examen D2, 10 preguntas.",meta:"70 % o más en D2."},
+  {id:"t07",dom:"D3",t:"D3 controles de acceso",per:"Inicia D3: controles de acceso físicos y lógicos.",pr:"Tarjetas D3.",meta:"Dar 3 ejemplos de control físico y 3 de lógico."},
+  {id:"t08",dom:"D3",t:"D3 modelos de acceso",per:"DAC, MAC, RBAC, mínimo privilegio, separación de funciones.",pr:"5 preguntas de D3.",meta:"Saber cuándo se usa cada modelo de acceso."},
+  {id:"t09",dom:"D3",t:"D3 ciclo de vida de identidades",per:"Termina D3: alta, cambio y baja de cuentas, cuentas privilegiadas.",pr:"Examen D3, 10 preguntas.",meta:"70 % o más en D3."},
+  {id:"t10",dom:"SIM",t:"Mini-simulacro D1 a D3",per:"Repasa en Percipio los temas que más fallaste.",pr:"Dos exámenes Mixtos de 15 preguntas seguidos, con cronómetro.",meta:"Lista de tus 5 conceptos más débiles."},
+  {id:"t11",dom:"D4",t:"D4 modelos de red",per:"Inicia D4: modelos OSI y TCP/IP, IPv4 e IPv6.",pr:"Tarjetas D4.",meta:"Decir las 7 capas OSI en orden."},
+  {id:"t12",dom:"D4",t:"D4 puertos y protocolos",per:"Puertos y protocolos comunes; cuáles son seguros y cuáles no.",pr:"Tarjetas D4 (puertos).",meta:"Saber 6 puertos comunes y 2 inseguros."},
+  {id:"t13",dom:"D4",t:"D4 ataques y defensas",per:"DoS/DDoS, MITM, malware; firewall, IDS e IPS.",pr:"5 preguntas de D4.",meta:"Distinguir IDS de IPS."},
+  {id:"t14",dom:"D4",t:"D4 arquitectura segura",per:"Segmentación, DMZ, VLAN, VPN, NAC.",pr:"Tarjetas D4.",meta:"Explicar para qué sirve una DMZ."},
+  {id:"t15",dom:"D4",t:"D4 zero trust y nube",per:"Termina D4: zero trust, IaaS/PaaS/SaaS, modelos de despliegue, responsabilidad compartida.",pr:"Examen D4, 10 preguntas.",meta:"70 % o más en D4."},
+  {id:"t16",dom:"D5",t:"D5 seguridad de datos",per:"Inicia D5: clasificación, ciclo de vida, retención y destrucción de datos.",pr:"Tarjetas D5.",meta:"Nombrar las etapas del ciclo de vida de los datos."},
+  {id:"t17",dom:"D5",t:"D5 cifrado y hashing",per:"Cifrado simétrico y asimétrico, hashing, firmas digitales.",pr:"Tarjetas D5.",meta:"Distinguir hash de cifrado."},
+  {id:"t18",dom:"D5",t:"D5 hardening y parches",per:"Endurecimiento de sistemas, gestión de configuración y parches.",pr:"5 preguntas de D5.",meta:"Dar 3 ejemplos de hardening."},
+  {id:"t19",dom:"D5",t:"D5 monitoreo y activos",per:"Logging, monitoreo, gestión de activos.",pr:"Tarjetas D5.",meta:"Explicar por qué importan los logs."},
+  {id:"t20",dom:"D5",t:"D5 pruebas y triage",per:"Pruebas de seguridad, triage de eventos, inteligencia de amenazas.",pr:"5 preguntas de D5.",meta:"Distinguir evento de incidente."},
+  {id:"t21",dom:"D5",t:"D5 incidentes + IA",per:"Termina D5: fases de respuesta a incidentes. Repasa los temas de IA en los cursos.",pr:"Examen D5, 10 preguntas.",meta:"Cerrar los 14 cursos de Percipio."},
+  {id:"t22",dom:"SIM",sim:true,t:"Simulacro completo 1",per:"Examen de práctica de Percipio: 100 preguntas, 2 h, sin volver atrás.",pr:"Anota el % en Simulacros.",meta:"70 % o más."},
+  {id:"t23",dom:"SIM",t:"Análisis del simulacro 1",per:"Revisa cada error y escribe por qué la correcta era la mejor.",pr:"Tarjetas de los temas fallados.",meta:"Saber tus 2 dominios más débiles."},
+  {id:"t24",dom:"SIM",t:"Refuerzo del dominio más débil",per:"Vuelve a ver sus lecciones en Percipio.",pr:"Examen de ese dominio, 10 preguntas.",meta:"Subir 10 puntos en ese dominio."},
+  {id:"t25",dom:"SIM",t:"Refuerzo del segundo más débil",per:"Vuelve a ver sus lecciones en Percipio.",pr:"Examen de ese dominio, 10 preguntas.",meta:"Subir 10 puntos en ese dominio."},
+  {id:"t26",dom:"SIM",t:"Recursos adicionales",per:"Los 3 recursos adicionales de Percipio.",pr:"3 dudas en \"Pregúntale a Claude\".",meta:"Cerrar todo Percipio al 100 %."},
+  {id:"t27",dom:"SIM",sim:true,t:"Simulacro completo 2",per:"100 preguntas, 2 h, mismas condiciones.",pr:"Anota el % en Simulacros.",meta:"75 % o más."},
+  {id:"t28",dom:"SIM",t:"Análisis del simulacro 2",per:"Revisa cada error del simulacro 2.",pr:"Todas las tarjetas, mezcladas.",meta:"Ninguna tarjeta dudosa."},
+  {id:"t29",dom:"SIM",sim:true,t:"Simulacro completo 3",per:"Última prueba completa, a la misma hora de tu examen.",pr:"Anota el % en Simulacros.",meta:"80 % o más."},
+  {id:"t30",dom:"SIM",t:"Errores finales + tarjetas",per:"Repasa los errores del simulacro 3.",pr:"Tarjetas mezcladas.",meta:"Sentirte seguro en los 5 dominios."},
+  {id:"t31",dom:"SIM",final:true,t:"Repaso ligero y preparación",per:"Solo repaso suave, nada nuevo.",pr:"Deja lista tu identificación y la ruta.",meta:"Dormir temprano."}
 ];
-const SCORES = [{k:"diag",n:"Diagnóstico (11 nov)"},{k:"s1",n:"Simulacro 1 (21 nov)"},{k:"s2",n:"Simulacro 2 (23 nov)"}];
-const STUDY = PLAN.flatMap(w=>w.days).filter(d=>!d.exam);
+const SCORES = [{k:"diag",n:"Diagnóstico"},{k:"s1",n:"Simulacro 1"},{k:"s2",n:"Simulacro 2"},{k:"s3",n:"Simulacro 3"}];
 const MAX = {courses:14, extras:3};
+const DEFAULT_SETTINGS = {start:"2026-11-11", exam:"2026-12-17", time:"11:00"};
+const fresh = () => ({done:{}, courses:0, extras:0, scores:{}, quiz:{}, settings:{...DEFAULT_SETTINGS}, replanFrom:null});
 
-let state = {done:{}, courses:0, extras:0, scores:{}, quiz:{}};
+let state = fresh();
 let store = null;   // "db" | "local" | null
 let ref = null;
 let writing = false, queued = false;
+let lastPlan = null;
 
+/* ---------- fechas ---------- */
+const $ = id => document.getElementById(id);
 function todayStr(){
   const n = new Date();
   return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
 }
-function fmtDay(id){
-  const d = new Date(id+"T12:00:00");
-  const s = d.toLocaleDateString("es-GT",{weekday:"short",day:"numeric",month:"short"});
-  return s.charAt(0).toUpperCase()+s.slice(1);
-}
-const $ = id => document.getElementById(id);
+function addDays(s, n){ const [y,m,d] = s.split("-").map(Number); const t = new Date(Date.UTC(y,m-1,d+n)); return t.toISOString().slice(0,10); }
+function dow(s){ const [y,m,d] = s.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); } // 0 dom … 6 sáb
+function daysBetween(a,b){ const p = s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d);}; return Math.round((p(b)-p(a))/86400000); }
+function fmtDay(s){ const t = new Date(s+"T12:00:00"); const r = t.toLocaleDateString("es-GT",{weekday:"short",day:"numeric",month:"short"}); return r.charAt(0).toUpperCase()+r.slice(1); }
+function fmtLong(s){ return new Date(s+"T12:00:00").toLocaleDateString("es-GT",{weekday:"long",day:"numeric",month:"long"}); }
+function fmtShort(s){ return new Date(s+"T12:00:00").toLocaleDateString("es-GT",{day:"numeric",month:"short"}); }
+function fmtTime(t){ const [h,m] = t.split(":").map(Number); const ap = h<12?"AM":"PM"; return ((h%12)||12)+":"+String(m).padStart(2,"0")+" "+ap; }
+function arriveTime(t){ let [h,m] = t.split(":").map(Number); m -= 30; if (m<0){m+=60;h-=1;} return fmtTime(String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")); }
 
+/* ---------- planificador ---------- */
+// Junta sesiones cuando faltan días: primero pares del mismo dominio, repartidos; luego repasos.
+function compress(units, n){
+  units = units.map(u=>({...u}));
+  const canPair = (a,b) => !a.sim && !b.sim && !a.final && !b.final && a.ids.length===1 && b.ids.length===1;
+  const passes = [
+    (a,b)=> canPair(a,b) && a.dom.length===1 && b.dom.length===1 && a.dom[0]===b.dom[0] && a.dom[0]!=="SIM",
+    (a,b)=> canPair(a,b) && a.dom.includes("SIM") && b.dom.includes("SIM"),
+    (a,b)=> canPair(a,b),
+    (a,b)=> !a.sim && !b.sim && !a.final && !b.final && a.ids.length+b.ids.length<=3
+  ];
+  for (const ok of passes){
+    for (const stride of [2,1]){
+      let i = 0;
+      while (units.length > n && i < units.length-1){
+        if (ok(units[i],units[i+1])){
+          const a = units[i], b = units[i+1];
+          units.splice(i,2,{ids:[...a.ids,...b.ids], dom:[...new Set([...a.dom,...b.dom])], t:a.t+" + "+b.t.replace(/^D\d /,""), per:a.per+" "+b.per, pr:b.pr, meta:b.meta, merged:true});
+          i += stride;
+        } else i++;
+      }
+      if (units.length <= n) return units;
+    }
+  }
+  return units;
+}
+// Elige qué días quedan libres cuando sobran: viernes primero, repartidos; luego espaciados.
+function pickBuffers(days, k){
+  const cand = days.slice(0,-1);              // el último día queda para el repaso final
+  const pick = new Set();
+  const fridays = cand.filter(d=>dow(d)===5);
+  if (k <= fridays.length){
+    for (let i=0;i<k;i++) pick.add(fridays[Math.min(fridays.length-1, Math.floor((i+0.5)*fridays.length/k))]);
+  } else {
+    fridays.forEach(f=>pick.add(f));
+    const rest = cand.filter(d=>!pick.has(d)); let r = k - fridays.length;
+    for (let i=0;i<r;i++) pick.add(rest[Math.min(rest.length-1, Math.floor((i+0.5)*rest.length/r))]);
+  }
+  return pick;
+}
+function layout(units, from, examDate){
+  const last = addDays(examDate,-1);
+  if (from > last) return {slots:[], over:units.length, buffers:0, merged:0};
+  const days = []; for (let d=from; d<=last; d=addDays(d,1)) days.push(d);
+  let us = units, merged = 0;
+  if (us.length > days.length){ const before = us.length; us = compress(us, days.length); merged = before - us.length; }
+  const over = Math.max(0, us.length - days.length);
+  if (over) us = us.slice(over);               // sin días suficientes: no se puede (se avisa)
+  const k = days.length - us.length;
+  const buf = k>0 ? pickBuffers(days, k) : new Set();
+  const slots = []; let j = 0;
+  for (const d of days){
+    if (buf.has(d)) slots.push({date:d, buffer:true});
+    else slots.push({date:d, unit:us[j++]});
+  }
+  return {slots, over, buffers:k, merged};
+}
+function unitOf(t){ return {ids:[t.id], dom:[t.dom], t:t.t, per:t.per, pr:t.pr, meta:t.meta, sim:!!t.sim, final:!!t.final}; }
+function buildPlan(){
+  const s = state.settings;
+  let res, history = [];
+  if (!state.replanFrom){
+    res = layout(TASKS.map(unitOf), s.start, s.exam);
+  } else {
+    const from = state.replanFrom < s.start ? s.start : state.replanFrom;
+    const pending = TASKS.filter(t=>!state.done[t.id]).map(unitOf);
+    res = layout(pending, from, s.exam);
+    // lo ya hecho queda en la fecha en que lo marcaste
+    const byDate = {};
+    for (const t of TASKS) if (state.done[t.id]){ const d = state.done[t.id]; (byDate[d] = byDate[d] || []).push(t); }
+    for (const d of Object.keys(byDate)){
+      const ts = byDate[d]; const u = ts.length===1 ? unitOf(ts[0]) : {ids:ts.map(t=>t.id), dom:[...new Set(ts.map(t=>t.dom))], t:ts.map(t=>t.t).join(" + "), per:ts.map(t=>t.per).join(" "), pr:ts[ts.length-1].pr, meta:ts[ts.length-1].meta, merged:true};
+      history.push({date:d, unit:u, history:true});
+    }
+  }
+  const all = [...history, ...res.slots].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+  all.push({date:s.exam, exam:true});
+  return {slots:all, over:res.over, buffers:res.buffers, merged:res.merged, from: state.replanFrom || s.start};
+}
+function hoursFor(slot){
+  if (slot.buffer) return "Libre";
+  const u = slot.unit;
+  if (u.final) return "1 h máx.";
+  if (u.sim) return "2.5 h";
+  if (u.merged) return "2 h";
+  const w = dow(slot.date); return (w===0||w===6) ? "2 h" : "60 min";
+}
+
+/* ---------- render ---------- */
 function render(){
   const today = todayStr();
-  // countdown
-  const ms = EXAM - new Date();
-  const days = Math.ceil((new Date(EXAM.toDateString()) - new Date(new Date().toDateString()))/86400000);
-  if (ms <= 0){ $("countdown").textContent = "Hoy fue"; $("countdownSub").textContent = "el examen"; }
-  else if (days === 0){ $("countdown").textContent = "Hoy"; $("countdownSub").textContent = "examen a las 12:30 PM"; }
-  else { $("countdown").textContent = days + (days===1?" día":" días"); $("countdownSub").textContent = "para el jueves 26 de noviembre"; }
+  const s = state.settings;
+  const plan = buildPlan(); lastPlan = plan;
+  const examAt = new Date(s.exam+"T"+s.time+":00-06:00");
 
-  // progress
-  const doneN = STUDY.filter(d=>state.done[d.id]).length;
-  $("doneCount").textContent = doneN+"/"+STUDY.length;
-  $("doneBar").style.width = (doneN/STUDY.length*100)+"%";
+  // encabezado y cuenta regresiva
+  $("headSub").textContent = `Del ${fmtLong(s.start)} al examen del ${fmtLong(s.exam)} a las ${fmtTime(s.time)}, Universidad Galileo.`;
+  const dleft = daysBetween(today, s.exam);
+  if (examAt - new Date() <= 0 && dleft <= 0){ $("countdown").textContent = "Listo"; $("countdownSub").textContent = "el examen ya pasó"; }
+  else if (dleft === 0){ $("countdown").textContent = "Hoy"; $("countdownSub").textContent = "examen a las "+fmtTime(s.time); }
+  else { $("countdown").textContent = dleft + (dleft===1?" día":" días"); $("countdownSub").textContent = "para el "+fmtLong(s.exam); }
 
-  // pace: days due up to yesterday (today counts once done)
-  const due = STUDY.filter(d=>d.id < today).length;
-  const dueToday = STUDY.some(d=>d.id===today);
-  const diff = doneN - due;
+  // sesiones
+  const total = TASKS.length;
+  const doneN = TASKS.filter(t=>state.done[t.id]).length;
+  $("doneCount").textContent = doneN+"/"+total;
+  $("doneBar").style.width = (doneN/total*100)+"%";
+
+  // ritmo
+  const lateSlots = plan.slots.filter(x=>x.unit && !x.history && x.date < today && x.unit.ids.some(id=>!state.done[id]));
+  const lateN = lateSlots.reduce((a,x)=>a + x.unit.ids.filter(id=>!state.done[id]).length, 0);
+  const aheadN = plan.slots.filter(x=>x.unit && !x.history && x.date > today).reduce((a,x)=>a + x.unit.ids.filter(id=>state.done[id]).length, 0);
+  const todaySlot = plan.slots.find(x=>x.date===today && x.unit && !x.history);
   const pace = $("pace"), sub = $("paceSub");
-  if (today < STUDY[0].id){ pace.className="pill ok"; pace.textContent="Arranca mañana"; sub.textContent="Primer día: diagnóstico + Dominio 1."; }
-  else if (diff < 0){ const n=-diff; pace.className = n>=3?"pill bad":"pill warn"; pace.textContent = "Atrasado "+n+(n===1?" día":" días"); sub.textContent = n>=3 ? "Junta dos días cortos o usa el fin de semana para recuperar." : "Recupéralo sumando 30 min extra los próximos días."; }
-  else if (diff > 0){ pace.className="pill ok"; pace.textContent="Adelantado "+diff+(diff===1?" día":" días"); sub.textContent="Usa el margen para más preguntas de práctica."; }
-  else { pace.className="pill ok"; pace.textContent="Al día"; sub.textContent = dueToday && !state.done[today] ? "Te falta marcar el día de hoy." : "Vas según el plan."; }
+  if (today < s.start){ pace.className="pill ok"; pace.textContent="Arranca pronto"; sub.textContent="Empiezas el "+fmtLong(s.start)+"."; }
+  else if (lateN > aheadN){ const n = lateN-aheadN; pace.className = n>=3?"pill bad":"pill warn"; pace.textContent = "Atrasado "+n+(n===1?" sesión":" sesiones"); sub.textContent = "Usa el botón Reajustar del plan para repartirlas hasta tu examen."; }
+  else if (aheadN > lateN){ const n = aheadN-lateN; pace.className="pill ok"; pace.textContent="Adelantado "+n+(n===1?" sesión":" sesiones"); sub.textContent="Usa el margen para más preguntas de práctica."; }
+  else { pace.className="pill ok"; pace.textContent="Al día"; sub.textContent = todaySlot && todaySlot.unit.ids.some(id=>!state.done[id]) ? "Te falta marcar la sesión de hoy." : "Vas según el plan."; }
 
-  // domains
+  // aviso de atraso / compresión
+  const alert = $("planAlert");
+  if (lateN > 0 && today >= s.start && today < s.exam){
+    alert.hidden = false; alert.className = "alert warn";
+    alert.innerHTML = `<span><strong>Tienes ${lateN} ${lateN===1?"sesión pendiente":"sesiones pendientes"} de días anteriores.</strong> Reajusta para repartir todo lo que falta desde hoy hasta el ${fmtShort(addDays(s.exam,-1))}.</span><button class="btn" id="replanBtn">Reajustar desde hoy</button>`;
+    $("replanBtn").onclick = ()=>{ state.replanFrom = today; save(); render(); };
+  } else if (plan.over > 0){
+    alert.hidden = false; alert.className = "alert bad";
+    alert.innerHTML = `<span><strong>No alcanzan los días.</strong> Faltan ${plan.over} días para meter todas las sesiones. Elige una fecha de examen más lejana o un inicio más temprano.</span>`;
+  } else alert.hidden = true;
+
+  // resumen del plan
+  const nDays = Math.max(0, daysBetween(plan.from < s.start ? s.start : plan.from, s.exam));
+  let info = `${nDays} días de estudio hasta el examen · ${total-doneN} sesiones pendientes`;
+  if (plan.buffers>0) info += ` · ${plan.buffers} ${plan.buffers===1?"día libre":"días libres"} de recuperación`;
+  if (plan.merged>0) info += ` · ${plan.merged} ${plan.merged===1?"día con sesión doble":"días con sesión doble"} (plan comprimido)`;
+  if (state.replanFrom) info += ` · reajustado el ${fmtShort(state.replanFrom)}`;
+  $("planInfo").textContent = info;
+
+  // dominios
   $("domains").innerHTML = "";
   for (const dm of DOMAINS){
-    const items = STUDY.filter(d=>d.dom.includes(dm.k));
-    const n = items.filter(d=>state.done[d.id]).length;
+    const items = TASKS.filter(t=>t.dom===dm.k);
+    const n = items.filter(t=>state.done[t.id]).length;
     const el = document.createElement("div"); el.className="dom";
     el.innerHTML = `<span class="code">${dm.k}</span><span class="name"></span><span class="w">${n}/${items.length}${dm.w?" · "+dm.w:""}</span><div class="bar thin"><i style="width:${items.length?n/items.length*100:0}%"></i></div>`;
     const qz = state.quiz && state.quiz[dm.k];
@@ -353,28 +505,75 @@ function render(){
     $("domains").appendChild(el);
   }
 
-  // percipio
+  // Percipio
   $("cTxt").textContent = state.courses+"/14"; $("cBar").style.width = (state.courses/14*100)+"%";
   $("xTxt").textContent = state.extras+"/3"; $("xBar").style.width = (state.extras/3*100)+"%";
 
-  // scores
-  for (const s of SCORES){
-    const v = state.scores[s.k];
-    const inp = $("sc-"+s.k);
+  // simulacros
+  for (const sc of SCORES){
+    const v = state.scores[sc.k], inp = $("sc-"+sc.k);
     if (document.activeElement !== inp) inp.value = (v ?? "");
-    const bar = $("scb-"+s.k);
+    const bar = $("scb-"+sc.k);
     bar.style.width = (v ? Math.min(v,100) : 0)+"%";
     bar.className = v>=80 ? "ok" : (v ? "warn" : "");
   }
 
-  // plan
-  for (const w of PLAN) for (const d of w.days){
-    const row = $("day-"+d.id);
-    row.classList.toggle("done", !!state.done[d.id]);
-    row.classList.toggle("today", d.id===today);
-    row.classList.toggle("late", d.id < today);
-    const cb = row.querySelector("input"); if (cb) cb.checked = !!state.done[d.id];
+  // ajustes (no pisar lo que se está escribiendo)
+  for (const [id,k] of [["setStart","start"],["setExam","exam"],["setTime","time"]]){ const el = $(id); if (document.activeElement !== el && !el.dataset.dirty) el.value = s[k]; }
+
+  renderPlan(plan, today);
+}
+
+function renderPlan(plan, today){
+  const s = state.settings;
+  const box = $("plan"); box.innerHTML = "";
+  // agrupar por semana (lunes a domingo)
+  const weeks = [];
+  for (const sl of plan.slots){
+    const mon = addDays(sl.date, -((dow(sl.date)+6)%7));
+    let w = weeks[weeks.length-1];
+    if (!w || w.mon !== mon){ w = {mon, slots:[]}; weeks.push(w); }
+    w.slots.push(sl);
   }
+  weeks.forEach((w,i)=>{
+    const wk = document.createElement("div"); wk.className = "week";
+    const first = w.slots[0].date, lastD = w.slots[w.slots.length-1].date;
+    const doms = [...new Set(w.slots.flatMap(x=>x.unit ? x.unit.dom : []).filter(d=>d!=="SIM"))];
+    const hasExam = w.slots.some(x=>x.exam), sims = w.slots.filter(x=>x.unit && x.unit.sim).length;
+    let label = hasExam ? "Semana del examen" : "Semana "+(i+1);
+    const bits = []; if (doms.length) bits.push((doms.length>1?"Dominios ":"Dominio ")+doms.map(d=>d.slice(1)).join(", ")); if (sims) bits.push(sims>1?sims+" simulacros":"simulacro");
+    const h = document.createElement("h3");
+    h.textContent = `${label} · ${fmtShort(first)}–${fmtShort(lastD)}${bits.length?" · "+bits.join(" y "):""}`;
+    wk.appendChild(h);
+    for (const sl of w.slots) wk.appendChild(rowFor(sl, today, s));
+    box.appendChild(wk);
+  });
+}
+function rowFor(sl, today, s){
+  const row = document.createElement(sl.unit ? "label" : "div");
+  row.className = "day";
+  if (sl.exam){
+    row.classList.add("exam");
+    row.innerHTML = `<span aria-hidden="true" style="width:20px"></span><span class="date">${fmtDay(sl.date)}</span><span class="txt"><span class="t" style="display:block">Examen CC · ${fmtTime(s.time)}</span><span class="det"><span class="k">Antes</span><span class="v">Desayuno completo y 15 min de tarjetas.</span><span class="k">Llegada</span><span class="v">Llega a las ${arriveTime(s.time)} a la Torre 1, 4.º nivel, oficina 418.</span><span class="k">Meta</span><span class="v">Aprobar.</span></span></span><span class="tag">EXAMEN</span>`;
+    if (sl.date===today) row.classList.add("today");
+    return row;
+  }
+  if (sl.buffer){
+    row.classList.add("buffer");
+    row.innerHTML = `<span aria-hidden="true" style="width:20px"></span><span class="date">${fmtDay(sl.date)}<span class="hrs">Libre</span></span><span class="txt"><span class="t" style="display:block">Día de recuperación</span><span class="d" style="display:block">Si vas atrasado, ponte al día. Si vas al día, descansa o repasa 5 min de tarjetas.</span></span><span class="tag">LIBRE</span>`;
+    if (sl.date===today) row.classList.add("today");
+    return row;
+  }
+  const u = sl.unit, isDone = u.ids.every(id=>state.done[id]);
+  const tag = u.dom.map(d=>d==="SIM"?"REPASO":d).join(" + ");
+  row.innerHTML = `<input type="checkbox" data-ids="${u.ids.join(",")}" data-date="${sl.date}" ${isDone?"checked":""}><span class="date">${fmtDay(sl.date)}<span class="hrs">${hoursFor(sl)}</span></span><span class="txt"><span class="t" style="display:block"></span><span class="det"><span class="k">Percipio</span><span class="v"></span><span class="k">Práctica</span><span class="v"></span><span class="k">Meta</span><span class="v"></span></span></span><span class="tag"></span>`;
+  row.querySelector(".t").textContent = (u.merged ? "Sesión doble: " : "") + u.t;
+  const vs = row.querySelectorAll(".det .v"); vs[0].textContent = u.per; vs[1].textContent = u.pr; vs[2].textContent = u.meta;
+  row.querySelector(".tag").textContent = tag;
+  if (isDone) row.classList.add("done");
+  if (sl.date===today) row.classList.add("today");
+  if (sl.date < today && !isDone) row.classList.add("late");
+  return row;
 }
 
 function buildStatic(){
@@ -390,41 +589,52 @@ function buildStatic(){
       save(); render();
     });
   }
-  const plan = $("plan");
-  for (const w of PLAN){
-    const wk = document.createElement("div"); wk.className="week";
-    const h = document.createElement("h3"); h.textContent = w.w; wk.appendChild(h);
-    for (const d of w.days){
-      const row = document.createElement(d.exam ? "div" : "label");
-      row.className = "day"+(d.exam?" exam":""); row.id = "day-"+d.id;
-      const tag = d.exam ? "EXAMEN" : d.dom.join(" + ");
-      row.innerHTML = `${d.exam?'<span aria-hidden="true" style="width:20px"></span>':`<input type="checkbox" id="cb-${d.id}">`}<span class="date">${fmtDay(d.id)}${d.h?`<span class="hrs">${d.h}</span>`:""}</span><span class="txt"><span class="t" style="display:block"></span><span class="det"><span class="k">${d.exam?"Antes":"Percipio"}</span><span class="v"></span><span class="k">${d.exam?"Llegada":"Práctica"}</span><span class="v"></span><span class="k">Meta</span><span class="v"></span></span></span><span class="tag">${tag==="SIM"?"REPASO":tag}</span>`;
-      row.querySelector(".t").textContent = d.t;
-      const vs = row.querySelectorAll(".det .v"); vs[0].textContent = d.per; vs[1].textContent = d.pr; vs[2].textContent = d.meta;
-      if (!d.exam) row.querySelector("input").addEventListener("change", e=>{
-        if (e.target.checked) state.done[d.id] = true; else delete state.done[d.id];
-        save(); render();
-      });
-      wk.appendChild(row);
-    }
-    plan.appendChild(wk);
-  }
+  $("plan").addEventListener("change", e=>{
+    const cb = e.target.closest("input[data-ids]"); if (!cb) return;
+    const ids = cb.dataset.ids.split(",");
+    for (const id of ids){ if (cb.checked) state.done[id] = cb.dataset.date; else delete state.done[id]; }
+    save(); render();
+  });
   document.querySelectorAll("[data-step]").forEach(b=>b.addEventListener("click",()=>{
     const k = b.dataset.step; state[k] = Math.max(0, Math.min(MAX[k], state[k] + (+b.dataset.d)));
     save(); render();
   }));
+  for (const id of ["setStart","setExam","setTime"]) $(id).addEventListener("input", e=>{ e.target.dataset.dirty = "1"; $("setMsg").textContent = "Pulsa Aplicar fechas para recalcular el plan."; });
+  $("setApply").addEventListener("click", ()=>{
+    const start = $("setStart").value, exam = $("setExam").value, time = $("setTime").value || "11:00";
+    const msg = $("setMsg");
+    if (!start || !exam){ msg.textContent = "Elige la fecha de inicio y la del examen."; return; }
+    if (daysBetween(start, exam) < 2){ msg.textContent = "El examen debe ser al menos 2 días después del inicio."; return; }
+    state.settings = {start, exam, time}; state.replanFrom = null;
+    for (const id of ["setStart","setExam","setTime"]) delete $(id).dataset.dirty;
+    save(); render();
+    msg.textContent = "Plan recalculado del "+fmtShort(start)+" al "+fmtShort(exam)+".";
+  });
+  $("setReset").addEventListener("click", ()=>{
+    for (const id of ["setStart","setExam","setTime"]) delete $(id).dataset.dirty;
+    state.replanFrom = null; save(); render(); $("setMsg").textContent = "Plan original restaurado; tus sesiones marcadas se conservan.";
+  });
   $("resetBtn").addEventListener("click", showConfirm);
 }
 
 function showConfirm(){
   const w = $("resetWrap");
   w.innerHTML = '<span class="confirm">¿Borrar todo el avance? <button class="danger" id="yes">Sí, borrar</button><button id="no">Cancelar</button></span>';
-  $("yes").onclick = ()=>{ state = {done:{}, courses:0, extras:0, scores:{}, quiz:{}}; save(); render(); restoreReset(); };
+  $("yes").onclick = ()=>{ const keep = state.settings; state = fresh(); state.settings = keep; save(); render(); restoreReset(); };
   $("no").onclick = restoreReset;
 }
 function restoreReset(){ $("resetWrap").innerHTML = '<button class="linkbtn" id="resetBtn">Reiniciar avance</button>'; $("resetBtn").addEventListener("click", showConfirm); }
 
 function setSave(t){ $("saveState").textContent = t; }
+function normalize(d){
+  const st = fresh();
+  st.done = {}; for (const [k,v] of Object.entries(d.done||{})) if (/^t\d\d$/.test(k)) st.done[k] = typeof v === "string" ? v : todayStr();
+  st.courses = d.courses||0; st.extras = d.extras||0;
+  st.scores = {...(d.scores||{})}; st.quiz = JSON.parse(JSON.stringify(d.quiz||{}));
+  if (d.settings && d.settings.start && d.settings.exam) st.settings = {start:d.settings.start, exam:d.settings.exam, time:d.settings.time||"11:00"};
+  st.replanFrom = d.replanFrom || null;
+  return st;
+}
 
 async function save(){
   if (store === "db"){
@@ -442,7 +652,7 @@ async function save(){
 
 function useLocal(){
   store = "local";
-  try { const s = JSON.parse(localStorage.getItem("cc-tracker")||"null"); if (s) state = {...state, ...s}; } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem("cc-tracker")||"null"); if (s) state = normalize(s); } catch(e){}
   setSave("Avance guardado en este navegador");
   render();
 }
@@ -606,7 +816,7 @@ render();
     if (!snap.metadata.fromCache) clearTimeout(timer);
     if (snap.exists){
       const d = snap.data();
-      state = {done:{...(d.done||{})}, courses:d.courses||0, extras:d.extras||0, scores:{...(d.scores||{})}, quiz:JSON.parse(JSON.stringify(d.quiz||{}))};
+      state = normalize(d);
     }
     if (!snap.metadata.hasPendingWrites) setSave(snap.exists ? "Avance guardado en la nube" : "Marca tu primer día para empezar a guardar.");
     render();
